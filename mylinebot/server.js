@@ -19,7 +19,7 @@ app.post('/webhook', line.middleware(config), (req, res) => {
     if(req.body.events[0].replyToken === '00000000000000000000000000000000' && req.body.events[1].replyToken === 'ffffffffffffffffffffffffffffffff'){
         res.send('Hello LINE BOT!(POST)');
         console.log('疎通確認用');
-        return; 
+        return;
     }
 
     Promise
@@ -30,14 +30,34 @@ app.post('/webhook', line.middleware(config), (req, res) => {
 const client = new line.Client(config);
 
 function handleEvent(event) {
-  if (event.type !== 'message' || event.message.type !== 'text') {
+  let mes = '';
+  console.log('---')
+  console.log(event);
+  if (event.type !== 'things') {
     return Promise.resolve(null);
   }
 
-  return client.replyMessage(event.replyToken, {
-    type: 'text',
-    text: event.message.text //実際に返信の言葉を入れる箇所
-  });
+  if(event.type === 'things' && event.things.type === 'link'){
+    mes = 'デバイスと接続しました。';
+  }else if(event.type === 'things' && event.things.type === 'unlink'){
+    mes = 'デバイスとの接続を解除しました。';
+  }else{
+    const thingsData = event.things.result;    
+    if (!thingsData.bleNotificationPayload) return
+    // bleNotificationPayloadにデータが来る
+    const blePayload = thingsData.bleNotificationPayload;
+    const buffer = new Buffer.from(blePayload, 'base64');
+    const data = buffer.toString('hex');  //Base64をデコード
+    console.log(buffer);
+    console.log("Payload=" + parseInt(data,16));
+    mes = `デバイスから${parseInt(data,16)}が送られてきたよ`;
+    const msgObj = {
+      type: 'text',
+      text: mes //実際に返信の言葉を入れる箇所
+    }
+
+    return client.replyMessage(event.replyToken, msgObj);
+  }
 }
 
 app.listen(PORT);
