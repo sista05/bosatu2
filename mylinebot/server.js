@@ -5,8 +5,8 @@ const line = require('@line/bot-sdk');
 const PORT = process.env.PORT || 3000;
 
 const config = {
-    channelSecret: '',
-    channelAccessToken: ''
+    channelSecret: 'f8ec837928189acde224626a3f501281',
+    channelAccessToken: 'J4zj8C8zZSR7sOQMSGjwCEYESqwh5wEFFQM1YlI9jCxVIdGJM5j7AbFMJomh1h/yQkVRRBERpforxLwTBLH/FzOFMBz0i/WqXYiWAMiTEwMY0NWFsIrG275DJD3H3Kj22MwrqaQnx3UL8TSexPHoYwdB04t89/1O/w1cDnyilFU='
 };
 
 const app = express();
