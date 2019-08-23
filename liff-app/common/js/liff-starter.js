@@ -1,22 +1,33 @@
 // User service UUID: Change this to your generated service UUID
-const USER_SERVICE_UUID         = '91E4E176-D0B9-464D-9FE4-52EE3E9F1552'; // LED, Button
+const USER_SERVICE_UUID         = '34ed6388-64d1-4852-842c-c6cd454e6a9d'; // LED, Button
 // User service characteristics
 const LED_CHARACTERISTIC_UUID   = 'E9062E71-9E62-4BC6-B0D3-35CDCD9B027B';
 const BTN_CHARACTERISTIC_UUID   = '62FBD229-6EDD-4D1A-B554-5C4E1BB29169';
 
 // PSDI Service UUID: Fixed value for Developer Trial
-const PSDI_SERVICE_UUID         = 'E625601E-9E55-4597-A598-76018A0D293D'; // Device ID
-const PSDI_CHARACTERISTIC_UUID  = '26E2B12B-85F0-4F3F-9FDD-91D114270E6E';
+const PSDI_SERVICE_UUID         = 'e625601e-9e55-4597-a598-76018a0d293d'; // Device ID
+const PSDI_CHARACTERISTIC_UUID  = '26e2b12b-85f0-4f3f-9fdd-91d114270e6e';
 
 // UI settings
 let ledState = false; // true: LED on, false: LED off
 let clickCount = 0;
+let allCnt = 0;
+let doneCnt = 0;
+
+// Max Btn 
+const TABLE = 10
+const MENBER = 4
+
+// UI item
+let gauge
 
 // -------------- //
 // On window load //
 // -------------- //
 
 window.onload = () => {
+    mertarInit()
+    uiComponetSetter()
     initializeApp();
 };
 
@@ -27,7 +38,6 @@ window.onload = () => {
 function handlerToggleLed() {
     ledState = !ledState;
 
-    uiToggleLedButton(ledState);
     liffToggleDeviceLedState(ledState);
 }
 
@@ -35,22 +45,102 @@ function handlerToggleLed() {
 // UI functions //
 // ------------ //
 
-function uiToggleLedButton(state) {
-    const el = document.getElementById("btn-led-toggle");
-    el.innerText = state ? "Switch LED OFF" : "Switch LED ON";
+function mertarInit() {
+    var opts = {
+        angle: -0.2, // The span of the gauge arc
+        lineWidth: 0.2, // The line thickness
+        radiusScale: 1, // Relative radius
+        pointer: {
+            length: 0.6, // // Relative to gauge radius
+            strokeWidth: 0.035, // The thickness
+            color: '#000000' // Fill color
+        },
+        limitMax: false,     // If false, max value increases automatically if value > maxValue
+        limitMin: false,     // If true, the min value of the gauge will be fixed
+        colorStart: '#6F6EA0',   // Colors
+        colorStop: '#C0C0DB',    // just experiment with them
+        strokeColor: '#EEEEEE',  // to see which ones work best for you
+        generateGradient: true,
+        highDpiSupport: true,     // High resolution support
+        
+        };
+        var target = document.getElementById('foo'); // your canvas element
+        gauge = new Gauge(target).setOptions(opts); // create sexy gauge!
+        gauge.maxValue = 100; // set max gauge value
+        gauge.setMinValue(0);  // Prefer setter over gauge.minValue = 0
+        gauge.animationSpeed = 32; // set animation speed (32 is default value)
+        gauge.set(0); // set actual value      
+}
 
-    if (state) {
-      el.classList.add("led-on");
-    } else {
-      el.classList.remove("led-on");
+function mertar(num) {
+    gauge.set(num); // set actual value      
+}
+
+function uiComponetSetter() {
+    calling = document.getElementById('calling')
+    menber = document.getElementById('menber')
+    table = document.getElementById('table')
+    done = document.getElementById('doneCnt')
+
+    calling.textContent = allCnt;
+    done.textContent = doneCnt;
+    menber.textContent = MENBER;
+    table.textContent = TABLE;
+}
+
+function sound(per) {
+    switch (true) {
+        case per < 50:
+            flush = new Audio('common/data/decision4.mp3');
+            console.log("< 50");
+            break;
+        case per < 75:
+            flush = new Audio('common/data/warning1.mp3');
+            console.log("< 75");
+            break;
+        case per < 100:
+            flush = new Audio('common/data/warning2.mp3');
+            console.log("< 100");
+            break;
+        case per >= 100:
+            flush = new Audio('common/data/cursor6.mp3');
+            console.log(flush);
+            break;
+        default:
+            console.log("def");
+            flush = new Audio('common/data/decision4.mp3');
+    }    
+    flush.play();
+}
+
+function uiCountDoneButton() {
+    if (clickCount > 0) {
+        counter(-1)
+        progressBar()
+        takometar()
     }
 }
 
-function uiCountPressButton() {
-    clickCount++;
+function counter(num) {
+    clickCount += num;
 
-    const el = document.getElementById("click-count");
-    el.innerText = clickCount;
+    if (num > 0) {
+        allCnt += num;
+    } else {
+        doneCnt++;
+    }
+
+    if (clickCount > allCnt) {
+        allCnt += allCnt;
+    }
+
+    uiComponetSetter()
+}
+
+function uiCountPressButton() {
+    counter(1)
+    progressBar()
+    takometar()
 }
 
 function uiToggleStateButton(pressed) {
@@ -58,10 +148,10 @@ function uiToggleStateButton(pressed) {
 
     if (pressed) {
         el.classList.add("pressed");
-        el.innerText = "Pressed";
+        el.innerText = "反応中！";
     } else {
         el.classList.remove("pressed");
-        el.innerText = "Released";
+        el.innerText = "反応なし";
     }
 }
 
@@ -124,6 +214,22 @@ function makeErrorMsg(errorObj) {
     return "Error\n" + errorObj.code + "\n" + errorObj.message;
 }
 
+function progressBar() {
+    // 残呼び出し数 / 人数
+    per = ((allCnt - doneCnt) / MENBER * 100)
+    document.getElementById('bussy').setAttribute('aria-valuenow', per.toFixed(1))
+    document.getElementById('bussy').setAttribute('style', 'width: '+per.toFixed(1)+'%;')
+    document.getElementById('bussy').textContent = per.toFixed(1) + '%'
+    sound(per)
+}
+
+function takometar() {
+    // 残呼び出し数 * テーブル数
+    per = ((allCnt - doneCnt) / TABLE * 100)
+    console.log('tako: '+per+' MENBER:'+MENBER+' allCnt:'+allCnt+' doneCnt:'+doneCnt)
+    mertar(per)
+}
+
 // -------------- //
 // LIFF functions //
 // -------------- //
@@ -165,9 +271,6 @@ function liffRequestDevice() {
 
 function liffConnectToDevice(device) {
     device.gatt.connect().then(() => {
-        document.getElementById("device-name").innerText = device.name;
-        document.getElementById("device-id").innerText = device.id;
-
         // Show status connected
         uiToggleDeviceConnected(true);
 
@@ -194,7 +297,6 @@ function liffConnectToDevice(device) {
             // Reset LED state
             ledState = false;
             // Reset UI elements
-            uiToggleLedButton(false);
             uiToggleStateButton(false);
 
             // Try to reconnect
@@ -230,11 +332,6 @@ function liffGetPSDIService(service) {
     // Get PSDI value
     service.getCharacteristic(PSDI_CHARACTERISTIC_UUID).then(characteristic => {
         return characteristic.readValue();
-    }).then(value => {
-        // Byte array to hex string
-        const psdi = new Uint8Array(value.buffer)
-            .reduce((output, byte) => output + ("0" + byte.toString(16)).slice(-2), "");
-        document.getElementById("device-psdi").innerText = psdi;
     }).catch(error => {
         uiStatusError(makeErrorMsg(error), false);
     });
@@ -253,6 +350,7 @@ function liffGetButtonStateCharacteristic(characteristic) {
                 // release
                 uiToggleStateButton(false);
                 uiCountPressButton();
+                handlerToggleLed()
             }
         });
     }).catch(error => {
